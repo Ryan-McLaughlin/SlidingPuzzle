@@ -21,16 +21,6 @@ public class GameManager: MonoBehaviour
         CreateGamePieces(0.01f);
     }
 
-    void Update()
-    {
-        // TODO: move this from Update() to when a piece is moved!
-        if(!shuffling && CheckCompletion())
-        {
-            shuffling = true;
-            StartCoroutine(WaitShuffle(0.5f));
-        }
-    }
-
     public void OnClick(InputAction.CallbackContext context)
     {
         //Debug.Log("GameManager.OnClick()");
@@ -97,20 +87,6 @@ public class GameManager: MonoBehaviour
         }
     }
 
-    private bool SwapIfValid(int i, int offset, int colCheck)
-    {
-        Debug.Log("GameManager.SwapIfValid");
-        if(((i % size) != colCheck) && ((i + offset) == emptyLocation))
-        {
-            (pieces[i], pieces[i + offset]) = (pieces[i + offset], pieces[i]);
-            (pieces[i].localPosition, pieces[i + offset].localPosition) = ((pieces[i + offset].localPosition, pieces[i].localPosition));
-            emptyLocation = i;
-            return true;
-        }
-
-        return false;
-    }
-
     private bool CheckCompletion()
     {
         for(int i = 0; i < pieces.Count; i++)
@@ -131,8 +107,69 @@ public class GameManager: MonoBehaviour
         shuffling = false;
     }
 
-    // Brute force shuffling
+    private bool SwapIfValid(int i, int offset, int colCheck)
+    {
+        Debug.Log("GameManager.SwapIfValid");
+        if(((i % size) != colCheck) && ((i + offset) == emptyLocation))
+        {
+            (pieces[i], pieces[i + offset]) = (pieces[i + offset], pieces[i]);
+            (pieces[i].localPosition, pieces[i + offset].localPosition) = ((pieces[i + offset].localPosition, pieces[i].localPosition));
+            emptyLocation = i;
+
+            // Check for completion after a piece has been moved
+            if(!shuffling && CheckCompletion())
+            {
+                shuffling = true;
+                StartCoroutine(WaitShuffle(0.5f));
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
     private void Shuffle()
+    {
+        int swaps = size * size; // Use a number of swaps relative to the puzzle size.
+        int lastSwapIndex = -1; // Keep track of the last moved piece to prevent immediately undoing a move.
+
+        for(int i = 0; i < swaps; i++)
+        {
+            // Find all valid neighbors of the empty space.
+            List<int> validMoves = new List<int>();
+
+            // Check above
+            if(emptyLocation - size >= 0) validMoves.Add(emptyLocation - size);
+            // Check below
+            if(emptyLocation + size < pieces.Count) validMoves.Add(emptyLocation + size);
+            // Check left
+            if(emptyLocation % size != 0) validMoves.Add(emptyLocation - 1);
+            // Check right
+            if(emptyLocation % size != size - 1) validMoves.Add(emptyLocation + 1);
+
+            // Remove the last swapped piece from the list of valid moves to avoid undoing the previous move.
+            if(lastSwapIndex != -1)
+            {
+                validMoves.Remove(lastSwapIndex);
+            }
+
+            // Pick a random neighbor to swap with the empty space.
+            int randomIndex = Random.Range(0, validMoves.Count);
+            int pieceToSwapIndex = validMoves[randomIndex];
+
+            // Perform the swap.
+            (pieces[emptyLocation].localPosition, pieces[pieceToSwapIndex].localPosition) = (pieces[pieceToSwapIndex].localPosition, pieces[emptyLocation].localPosition);
+            (pieces[emptyLocation], pieces[pieceToSwapIndex]) = (pieces[pieceToSwapIndex], pieces[emptyLocation]);
+
+            // Update the lastSwapIndex and emptyLocation.
+            lastSwapIndex = emptyLocation;
+            emptyLocation = pieceToSwapIndex;
+        }
+    }
+
+    // Brute force shuffling
+    private void BruteShuffle()
     {
         int count = 0;
         int last = 0;
@@ -162,5 +199,4 @@ public class GameManager: MonoBehaviour
             }
         }
     }
-
 }

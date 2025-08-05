@@ -14,11 +14,13 @@ public class GameManager: MonoBehaviour
     private bool shuffling = false;
 
     public int size;
+    public int moves;
 
     void Start()
     {
         pieces = new List<Transform>();
-        CreateGamePieces(0.01f);
+        CreateGamePieces(0.01f, size);
+        Shuffle(size, moves);
     }
 
     public void OnClick(InputAction.CallbackContext context)
@@ -47,13 +49,13 @@ public class GameManager: MonoBehaviour
         }
     }
 
-    private void CreateGamePieces(float gapThickness)
+    private void CreateGamePieces(float gapThickness, int gridSize)
     {
-        float width = 1 / (float)size;
+        float width = 1 / (float)gridSize;
 
-        for(int row = 0; row < size; row++)
+        for(int row = 0; row < gridSize; row++)
         {
-            for(int col = 0; col < size; col++)
+            for(int col = 0; col < gridSize; col++)
             {
                 Transform piece = Instantiate(piecePrefab, gameTransform);
 
@@ -63,11 +65,11 @@ public class GameManager: MonoBehaviour
                                                   +1 - (2 * width * row) + width,
                                                   0);
                 piece.localScale = ((2 * width) - gapThickness) * Vector3.one;
-                piece.name = $"{(row * size) + col}";
+                piece.name = $"{(row * gridSize) + col}";
 
-                if((row == size - 1) && (col == size - 1))
+                if((row == gridSize - 1) && (col == gridSize - 1))
                 {
-                    emptyLocation = (size * size) - 1;
+                    emptyLocation = (gridSize * gridSize) - 1;
                     piece.gameObject.SetActive(false);
                 }
                 else
@@ -103,7 +105,7 @@ public class GameManager: MonoBehaviour
     private IEnumerator WaitShuffle(float duration)
     {
         yield return new WaitForSeconds(duration);
-        Shuffle();
+        Shuffle(size, moves);
         shuffling = false;
     }
 
@@ -129,24 +131,24 @@ public class GameManager: MonoBehaviour
         return false;
     }
 
-    private void Shuffle()
+    private void Shuffle(int gridSize, int moves)
     {
-        int swaps = size * size; // Use a number of swaps relative to the puzzle size.
+        //int swaps = size * size; // Use a number of swaps relative to the puzzle size.
         int lastSwapIndex = -1; // Keep track of the last moved piece to prevent immediately undoing a move.
 
-        for(int i = 0; i < swaps; i++)
+        for(int i = 0; i < moves; i++)
         {
             // Find all valid neighbors of the empty space.
             List<int> validMoves = new List<int>();
 
             // Check above
-            if(emptyLocation - size >= 0) validMoves.Add(emptyLocation - size);
+            if(emptyLocation - gridSize >= 0) validMoves.Add(emptyLocation - gridSize);
             // Check below
-            if(emptyLocation + size < pieces.Count) validMoves.Add(emptyLocation + size);
+            if(emptyLocation + gridSize < pieces.Count) validMoves.Add(emptyLocation + gridSize);
             // Check left
-            if(emptyLocation % size != 0) validMoves.Add(emptyLocation - 1);
+            if(emptyLocation % gridSize != 0) validMoves.Add(emptyLocation - 1);
             // Check right
-            if(emptyLocation % size != size - 1) validMoves.Add(emptyLocation + 1);
+            if(emptyLocation % gridSize != gridSize - 1) validMoves.Add(emptyLocation + 1);
 
             // Remove the last swapped piece from the list of valid moves to avoid undoing the previous move.
             if(lastSwapIndex != -1)
@@ -167,36 +169,38 @@ public class GameManager: MonoBehaviour
             emptyLocation = pieceToSwapIndex;
         }
     }
+}
 
-    // Brute force shuffling
-    private void BruteShuffle()
+/*/ Brute force shuffling
+private void BruteShuffle()
+{
+    int count = 0;
+    int last = 0;
+
+    while(count < (size * size * size))
     {
-        int count = 0;
-        int last = 0;
+        int rnd = Random.Range(0, size * size);
 
-        while(count < (size * size * size))
+        if(rnd == last) { continue; }
+        last = emptyLocation;
+
+        if(SwapIfValid(rnd, -size, size))
         {
-            int rnd = Random.Range(0, size * size);
-
-            if(rnd == last) { continue; }
-            last = emptyLocation;
-
-            if(SwapIfValid(rnd, -size, size))
-            {
-                count++;
-            }
-            else if(SwapIfValid(rnd, +size, size))
-            {
-                count++;
-            }
-            else if(SwapIfValid(rnd, -1, 0))
-            {
-                count++;
-            }
-            else if(SwapIfValid(rnd, +1, size - 1))
-            {
-                count++;
-            }
+            count++;
+        }
+        else if(SwapIfValid(rnd, +size, size))
+        {
+            count++;
+        }
+        else if(SwapIfValid(rnd, -1, 0))
+        {
+            count++;
+        }
+        else if(SwapIfValid(rnd, +1, size - 1))
+        {
+            count++;
         }
     }
 }
+*/
+
